@@ -13,57 +13,53 @@ Rate-New is a modern review and rating platform built with:
 ```
 Rate-New/                           # Turborepo monorepo
 ├── apps/
-│   ├── strapi/                     # Backend API (Strapi 5.14.0)
-│   │   ├── config/                 # Strapi configuration
-│   │   ├── database/               # Database migrations
-│   │   ├── src/
-│   │   │   ├── api/                # Content types & API routes
-│   │   │   │   ├── category/       # Category content type
-│   │   │   │   ├── item/           # Item content type (master entities)
-│   │   │   │   ├── listing/        # Listing content type (reports)
-│   │   │   │   ├── listing-type/   # Listing Type schemas
-│   │   │   │   └── ...             # Other content types
-│   │   │   ├── components/         # Reusable field components
-│   │   │   │   ├── info/           # Information components
-│   │   │   │   ├── contact/        # Contact components
-│   │   │   │   ├── rating/         # Rating components
-│   │   │   │   └── ...             # Other component categories
-│   │   │   └── plugins/            # Custom plugins
-│   │   │       └── smart-component-filter/  # Smart loading plugin
-│   │   └── types/                  # TypeScript definitions
+│   ├── strapi/                     # Backend API (Strapi)
 │   └── ui/                         # Frontend Next.js app
-│       ├── src/
-│       │   ├── app/                # App Router (Next.js 15)
-│       │   │   └── [locale]/       # i18n routing
-│       │   ├── components/         # React components
-│       │   │   ├── page-builder/   # Dynamic content rendering
-│       │   │   ├── forms/          # Form components
-│       │   │   └── ui/             # UI components
-│       │   └── lib/                # Utilities & API clients
-│       └── locales/                # i18n translations
-├── packages/                       # Shared packages
-│   ├── design-system/              # Shared UI components
-│   ├── shared-data/                # Shared types & utilities
-│   ├── eslint-config/              # ESLint configuration
-│   ├── prettier-config/            # Prettier configuration
-│   └── typescript-config/          # TypeScript configuration
-├── modules/                        # External modules
-│   └── Rate-Importer/              # Crawler module (external project)
-│       ├── Scripts/                # Crawler implementation
-│       ├── Results/                # Crawled data output
-│       ├── docker-compose.yml      # FlareSolverr setup
-│       └── crawl.js                # CLI interface
+├── packages/                       # Shared packages (UI, types, config, ...)
+│   ├── design-system/
+│   ├── shared-data/
+│   ├── eslint-config/
+│   ├── prettier-config/
+│   └── typescript-config/
+├── modules/                        # Feature modules (rate ecosystem)
+│   ├── Rate-Importer/              # Crawler & import pipeline
+│   ├── Rate-Extension/             # Chrome extension (browser crawler)
+│   ├── Core-Validator/             # Validation & enrichment logic
+│   └── ...                         # (Add more modules as needed)
 ├── docs/                           # Documentation
-│   ├── README.md                   # This file
-│   ├── dynamic-content-architecture.md
-│   ├── implementation-plan-dynamic-zone-native.md
-│   └── ...                         # Other documentation
 ├── scripts/                        # Build & deployment scripts
-├── playwright-mcp-config.json      # Browser automation config
 ├── turbo.json                      # Turborepo configuration
 ├── package.json                    # Root package.json
 └── yarn.lock                       # Yarn lockfile
 ```
+
+- **`modules/Rate-Importer/`**: Batch crawler, API import, CLI tools
+- **`modules/Rate-Extension/`**: Chrome extension (browser automation, AJAX crawling)
+- **`modules/Core-Validator/`**: Shared validation, enrichment, dedup, fraud scoring
+
+> **Mỗi module là 1 workspace/package độc lập, dễ phát triển song song, chia sẻ code qua packages/**
+
+---
+
+### Recommended Dev Workflow
+
+- Mỗi dev có thể mở riêng từng folder module (Importer, Extension, Validator, ...) bằng nhiều cửa sổ IDE/Windsurf.
+- Khi phát triển/tối ưu core logic (validator, adapter, ...), chỉ cần sửa ở module tương ứng, các module khác sẽ tự động nhận update khi build lại.
+- Sử dụng lệnh build/test/lint từ root hoặc từng module/package.
+
+---
+
+### Multi-Module/Package Development
+
+- **Không bị conflict khi mở nhiều cửa sổ IDE cho từng module** (chỉ cần tránh sửa cùng 1 file ở nhiều nơi cùng lúc).
+- Có thể chạy test/build/lint cho từng module hoặc toàn bộ project bằng Turborepo/Yarn workspaces.
+- Khi move các module vào monorepo, giữ nguyên git history bằng lệnh `git mv` hoặc các tool merge history nếu cần.
+
+---
+
+### Tài liệu bổ sung
+- Cập nhật thêm docs cho từng module tại `modules/Rate-Importer/README.md`, `modules/Rate-Extension/README.md`, `modules/Core-Validator/README.md` để hướng dẫn dev, build, test từng phần.
+
 
 ### Crawler Module
 

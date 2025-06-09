@@ -14,12 +14,22 @@ Raw Data → Pre-Processing → Basic Validation → Business Rules → AI/ML Ve
 - Làm sạch dữ liệu: loại bỏ HTML, chuẩn hóa whitespace, decode URL
 - Kiểm tra trường bắt buộc (link, domain, nội dung)
 - Loại bỏ bản ghi noise, trùng lặp, hoặc thiếu thông tin
+- **Deduplication đa trường:**
+  - **Kết hợp cả pg_trgm và pgvector** để phát hiện trùng lặp trên nhiều loại trường (tên, email, số điện thoại, tiêu đề, mô tả...)
+  - Lọc sơ bộ bằng pg_trgm với các trường ngắn (name, email, phone, address, product_title)
+  - So khớp sâu bằng pgvector với trường dài (description, content)
+  - Có thể dùng rule hoặc ML để tổng hợp kết quả
+- **Lưu ý:**
+  - Cần enable cả hai extension trên PostgreSQL: `CREATE EXTENSION IF NOT EXISTS pg_trgm;` và `CREATE EXTENSION IF NOT EXISTS vector;`
+  - Cần encode text thành vector bằng mô hình NLP (vd: sentence-transformers) trước khi insert vào DB
 
 **Ví dụ:**
 ```js
 function preProcess(record) {
   // Clean HTML, trim, decode, check required fields
-  // Remove duplicates
+  // Remove duplicates (multi-field dedup)
+  // 1. Fuzzy match (pg_trgm) on name/email/phone/title
+  // 2. Semantic match (pgvector) on description/content
   ...
 }
 ```
@@ -39,6 +49,64 @@ function preProcess(record) {
 **Schema record:**
 - **name:** Tên nghi phạm/scammer (nickname, tên đăng bài, tên giả)
 - **bank_account_name:** Tên chủ tài khoản ngân hàng (nếu extract được, thường là tên thật)
+- **email, phone, address, product_title, description:** Các trường sẽ được xử lý dedup đa tầng
+- **dedup_score:** Trả về điểm nghi ngờ trùng lặp (tổng hợp từ cả pg_trgm và pgvector)
+
+---
+
+## 3️⃣ Business Rules (Quy tắc nghiệp vụ)
+- Kiểm tra blacklist/whitelist nâng cao
+- Rule đặc thù ngành (vd: số tài khoản ngân hàng hợp lệ, format đúng, tên phải khớp chủ tài khoản...)
+- Gắn nhãn (flag) theo logic nghiệp vụ
+
+---
+
+## 4️⃣ AI/ML Verification
+- Áp dụng mô hình ML/AI để phát hiện pattern lạ, nghi ngờ scam, gian lận
+- Có thể dùng model classification, anomaly detection, hoặc LLM để kiểm tra nội dung
+
+---
+
+## 5️⃣ Final Enrichment
+- Chuẩn hóa, enrich thêm metadata (vd: chuẩn hóa địa chỉ, mapping domain, enrich thông tin profile...)
+- Chuẩn bị dữ liệu cho downstream (Strapi, API, dashboard...)
+
+---
+
+## ⚡️ Kế hoạch triển khai dedup đa trường PostgreSQL
+
+1. **Enable extension:**
+   - `pg_trgm` cho fuzzy string match
+   - `pgvector` cho semantic search
+2. **Thiết kế schema:**
+   - Các trường ngắn: TEXT + index GIN/GIN_TRGM
+   - Trường dài: VECTOR + index HNSW hoặc IVFFlat
+3. **Pipeline Python:**
+   - Encode text dài thành vector (sentence-transformers...)
+   - Insert/update vào DB
+   - API dedup: nhận record, query multi-field dedup, trả về score + bản ghi nghi ngờ
+4. **Query mẫu:**
+   - Lọc sơ bộ bằng pg_trgm, sau đó so khớp sâu bằng pgvector
+   - Có thể dùng stored procedure hoặc Python wrapper
+5. **Tích hợp vào validation pipeline:**
+   - Gọi API dedup ở bước pre-processing
+   - Gắn flag/scoring cho downstream
+
+---
+
+## 📝 Lưu ý thực tế
+- Có thể tối ưu performance bằng cách lưu cache kết quả dedup, hoặc chỉ recheck khi có thay đổi lớn
+- Có thể mở rộng logic scoring/ML cho các use-case đặc thù (scam, spam, fraud...)
+- Luôn log lại các bản ghi nghi ngờ để kiểm tra thủ công nếu cần
+
+---
+
+## TODO/NEXT
+- Viết module Python dedup đa trường (pg_trgm + pgvector)
+- Viết API wrapper (FastAPI hoặc script CLI)
+- Tích hợp vào validation pipeline
+- Viết test case và demo query thực tế
+
 - **phone:** Số điện thoại (theo định dạng Việt Nam: 0/ +84 và 8-10 số)
 - **bank:** Thông tin ngân hàng (tên ngân hàng + số tài khoản, nhận diện qua danh sách ngân hàng phổ biến)
 - **scam_amount:** Số tiền liên quan đến vụ scam (dạng số, có thể kèm đơn vị VNĐ, triệu, nghìn, v.v.)

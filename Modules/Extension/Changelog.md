@@ -1,5 +1,13 @@
 # Rate-Extension Changelog
 
+## [1.0.4] - 2025-06-07
+### Changed
+- Export Shopee Reviews trực tiếp từ popup, không còn lỗi createObjectURL (Manifest V3/service worker).
+- UX: Nút Export = Extract + Export tự động, chỉ cần bấm 1 lần.
+- Tăng version lên 1.0.4.
+- Fix triệt để các lỗi export file trên Chrome mới.
+
+
 ## [2025-06-06]
 ### Added
 - Khởi tạo tài liệu README, roadmap, changelog cho module extension
